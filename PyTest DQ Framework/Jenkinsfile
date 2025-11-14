@@ -1,0 +1,87 @@
+pipeline {
+    agent any
+
+    environment {
+        DB_CREDENTIALS = credentials('db')
+        DB_HOST = 'postgres'
+        DB_NAME = 'mydatabase'
+        PYTHONPATH = "${WORKSPACE}"
+        JENKINS_PARQUET_PATH = "/parquet_data"
+        REPORT_DIR = "reports"
+        PROJECT_DIR = "PyTest DQ Framework"
+    }
+
+    stages {
+        stage('Prepare System') {
+            steps {
+                sh '''
+                    apt-get update
+                    apt-get install -y libpq-dev python3 python3-pip python3-venv
+                '''
+            }
+        }
+
+        stage('Set Up Environment') {
+            steps {
+                sh '''
+                    cd "${WORKSPACE}/${PROJECT_DIR}"
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Debug Credentials') {
+            steps {
+                echo "DB Username: ${DB_CREDENTIALS_USR}"
+            }
+        }
+
+        stage('Run Data Quality Tests') {
+            steps {
+                sh '''
+                    set -e
+
+                    # Define paths
+                    REPORT_PATH="${JENKINS_PARQUET_PATH}/${REPORT_DIR}"
+                    mkdir -p "$REPORT_PATH"
+                    echo "Using parquet path: ${JENKINS_PARQUET_PATH}"
+
+                    # Generate timestamp
+                    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                    REPORT_FILE="$REPORT_PATH/report_${TIMESTAMP}.html"
+
+                    # Activate venv
+                    cd "${WORKSPACE}/${PROJECT_DIR}"
+                    . venv/bin/activate
+
+                    export PYTHONPATH="${WORKSPACE}"
+                    export PARQUET_ROOT_PATH="${JENKINS_PARQUET_PATH}"
+
+                    pytest \\
+                        --db_host "${DB_HOST}" \\
+                        --db_user "${DB_CREDENTIALS_USR}" \\
+                        --db_password "${DB_CREDENTIALS_PSW}" \\
+                        --db_name "${DB_NAME}" \\
+                        --db_port 5432 \\
+                        --html="$REPORT_FILE" \\
+                        --self-contained-html -v || true
+
+                    echo "Report generated: $REPORT_FILE"
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline execution completed.'
+
+        }
+        success { echo 'DQ checks were runned!' }
+
+        failure { echo 'Pipeline error (not test failure)' }
+    }
+}

@@ -1,0 +1,16 @@
+# Python version >= 3.8 is required
+
+# PostgreSQL adapter
+psycopg2~=2.9.10
+
+# Data processing library
+pandas~=2.2.3
+
+# Testing framework
+pytest~=8.4.0
+
+# HTML report generation for pytest
+pytest-html~=4.1.1
+
+# Parquet support engine for pandas
+pyarrow~=22.0.0
