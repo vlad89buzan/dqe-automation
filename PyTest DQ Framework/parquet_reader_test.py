@@ -7,7 +7,7 @@ import pandas as pd
 from src.connectors.file_system.parquet_reader import ParquetReader
 
 
-PARQUET_PATH = r"C:\Users\Vladyslav_Buzan\Documents\parquet_data\patient_sum_treatment_cost_per_facility_type"  # update this
+PARQUET_PATH = r"C:\Users\Vladyslav_Buzan\Documents\parquet_data\facility_type_avg_time_spent_per_visit_date"  # update this
 
 
 def main():
